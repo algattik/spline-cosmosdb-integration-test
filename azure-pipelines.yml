@@ -1,0 +1,42 @@
+variables:
+  RESOURCE_GROUP: splineintegrtest
+  COSMOSDB_NAME_PREFIX: splineintegrtest
+  GIT_BRANCH: master
+
+trigger:
+- master
+
+pool:
+  vmImage: 'Ubuntu-16.04'
+
+steps:
+
+- task: AzureCLI@1
+  displayName: Create Azure resources
+  inputs:
+    azureSubscription: ARMConnection
+    scriptPath: before-build.sh
+    
+- task: Maven@3
+  displayName: Build Spline
+  inputs:
+    mavenPomFile: 'spline/pom.xml'
+    mavenOptions: '-Xmx3072m'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.8'
+    jdkArchitectureOption: 'x64'
+    publishJUnitResults: true
+    testResultsFiles: '**/surefire-reports/TEST-*.xml'
+    #Maven command line arguments:
+    # -P: profile
+    # -s: use settings file from before-build task, containing database connection string
+    # -B: batch mode, reduce output verbosity
+    # -D...: disable verbose output of artifact download information
+    goals: 'package -Pspark-2.4 -s maven_settings.xml -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+
+- task: AzureCLI@1
+  displayName: Delete Azure Resources
+  condition: always()
+  inputs:
+    azureSubscription: ARMConnection
+    scriptPath: after-build.sh
