@@ -1,0 +1,1 @@
+# spline-cosmosdb-integration-test
