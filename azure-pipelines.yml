@@ -1,7 +1,7 @@
 variables:
   RESOURCE_GROUP: splineintegrtest
   COSMOSDB_NAME_PREFIX: splineintegrtest
-  GIT_BRANCH: master
+  GIT_BRANCH: release/0.3
 
 trigger:
 - master
