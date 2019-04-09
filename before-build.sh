@@ -4,7 +4,7 @@
 set -euo pipefail
 
 # Clone the repository to be tested
-git clone --single-branch --branch $GIT_BRANCH https://github.com/algattik/spline.git
+git clone --single-branch --branch $GIT_BRANCH https://github.com/AbsaOSS/spline.git
 
 # The name of the Cosmos DB instance where tests will be run. Generate a unique name.
 COSMOSDB_INSTANCE="$COSMOSDB_NAME_PREFIX$BUILD_BUILDID"
