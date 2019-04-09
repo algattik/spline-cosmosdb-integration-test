@@ -1,10 +1,10 @@
+trigger:
+  - master
+
 variables:
   RESOURCE_GROUP: splineintegrtest
   COSMOSDB_NAME_PREFIX: splineintegrtest
   GIT_BRANCH: release/0.3
-
-trigger:
-- master
 
 pool:
   vmImage: 'Ubuntu-16.04'
@@ -16,7 +16,7 @@ steps:
   inputs:
     azureSubscription: ARMConnection
     scriptPath: before-build.sh
-    
+
 - task: Maven@3
   displayName: Build Spline
   inputs:
@@ -25,18 +25,44 @@ steps:
     javaHomeOption: 'JDKVersion'
     jdkVersionOption: '1.8'
     jdkArchitectureOption: 'x64'
-    publishJUnitResults: true
-    testResultsFiles: '**/surefire-reports/TEST-*.xml'
+    publishJUnitResults: false
     #Maven command line arguments:
     # -P: profile
-    # -s: use settings file from before-build task, containing database connection string
+    # -DskipTests: build only, do not run tests
     # -B: batch mode, reduce output verbosity
-    # -D...: disable verbose output of artifact download information
-    goals: 'package -Pspark-2.4 -s maven_settings.xml -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+    goals: package -Pspark-2.4 -DskipTests -B
+
+- task: Maven@3
+  displayName: Run Spline tests
+  inputs:
+    mavenPomFile: 'spline/pom.xml'
+    mavenOptions: '-Xmx3072m'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.8'
+    jdkArchitectureOption: 'x64'
+    #Maven command line arguments:
+    # -P: profile
+    # -D: set connection string for Cosmos DB instance
+    goals: test -Pspark-2.4 -Dtest.spline.mongodb.url=$(COSMOSDB_CONN_STRING)
+
+- task: CopyFiles@2
+  displayName: Copy web app to artifacts directory
+  inputs:
+    sourceFolder: 'spline/web/target'
+    contents: |
+      *.jar
+      *.war
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish web app artifacts
+  inputs:
+    artifactName: 'spline'
 
 - task: AzureCLI@1
-  displayName: Delete Azure Resources
+  displayName: Delete Azure resources
   condition: always()
   inputs:
     azureSubscription: ARMConnection
     scriptPath: after-build.sh
+
